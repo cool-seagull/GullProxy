@@ -1,0 +1,417 @@
+<Window x:Class="GullProxy.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:GullProxy.Ui"
+        xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
+        Title="GullProxy" Height="800" Width="1340" MinHeight="520" MinWidth="980"
+        Background="{StaticResource Bg}" WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <ui:BoolToWrapConverter x:Key="BoolToWrap"/>
+
+        <Style x:Key="Mono" TargetType="TextBox">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, monospace"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="Background" Value="{StaticResource PanelAlt}"/>
+            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="SelectionBrush" Value="{StaticResource Accent}"/>
+        </Style>
+        <Style x:Key="MonoEdit" TargetType="TextBox" BasedOn="{StaticResource Mono}">
+            <Setter Property="IsReadOnly" Value="False"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="AcceptsTab" Value="False"/>
+            <Setter Property="CaretBrush" Value="{StaticResource Accent}"/>
+        </Style>
+        <Style x:Key="SectionLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Faint}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Faint}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, monospace"/>
+            <Setter Property="Margin" Value="10,6,10,2"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Resources>
+
+    <Window.InputBindings>
+        <KeyBinding Modifiers="Control" Key="L" Command="{Binding ClearCommand}"/>
+    </Window.InputBindings>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ============ Toolbar ============ -->
+        <Border Grid.Row="0" Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}"
+                BorderThickness="0,0,0,1" Padding="14,11">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="2,0,18,0">
+                    <TextBlock Text="🐦" FontSize="19" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                    <TextBlock Text="Gull" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Text="Proxy" FontSize="17" FontWeight="Bold" Foreground="{StaticResource Accent}" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <Button Grid.Column="1" Style="{StaticResource PrimaryButton}"
+                        Content="{Binding CaptureButtonText}" Command="{Binding ToggleCaptureCommand}"
+                        MinWidth="152" Margin="0,0,8,0"/>
+                <Button Grid.Column="2" Style="{StaticResource ToolButton}"
+                        Content="Clear" Command="{Binding ClearCommand}" Margin="0,0,14,0"/>
+
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                    <CheckBox Content="🌐 Geo" IsChecked="{Binding GeoEnabled}" Margin="0,0,7,0"
+                              ToolTip="Look up each server's country (ip-api.com)"/>
+                    <CheckBox Content="⤓ Follow" IsChecked="{Binding AutoScroll}" Margin="0,0,7,0"
+                              ToolTip="Auto-scroll to the newest request"/>
+                    <CheckBox Content="↩ Wrap" IsChecked="{Binding WrapBodies}" Margin="0,0,14,0"
+                              ToolTip="Word-wrap bodies in the detail panes"/>
+                </StackPanel>
+
+                <Border Grid.Column="4" Background="{StaticResource PanelAlt}" BorderBrush="{StaticResource Border}"
+                        BorderThickness="1" CornerRadius="7" VerticalAlignment="Center" Padding="9,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Foreground="{StaticResource Muted}"
+                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBox Grid.Column="1" x:Name="SearchBox" Background="Transparent" BorderThickness="0"
+                                 VerticalAlignment="Center" Padding="0,6"
+                                 Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                                 ToolTip="Filter by host, path, method, or status   (Ctrl+F)"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ============ Main tabs ============ -->
+        <TabControl Grid.Row="1" Margin="8,8,8,0" SelectedIndex="{Binding SelectedTab, Mode=TwoWay}">
+
+            <!-- ===================== LIVE CAPTURE ===================== -->
+            <TabItem Header="Live Capture">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- status filter chips -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="2,8,0,8">
+                        <TextBlock Text="Status" Foreground="{StaticResource Faint}" FontSize="11.5"
+                                   VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <RadioButton Style="{StaticResource Chip}" Content="All" GroupName="sf" IsChecked="True"
+                                     Command="{Binding SetStatusFilterCommand}" CommandParameter="All"/>
+                        <RadioButton Style="{StaticResource Chip}" Content="2xx" GroupName="sf"
+                                     Command="{Binding SetStatusFilterCommand}" CommandParameter="2xx"/>
+                        <RadioButton Style="{StaticResource Chip}" Content="3xx" GroupName="sf"
+                                     Command="{Binding SetStatusFilterCommand}" CommandParameter="3xx"/>
+                        <RadioButton Style="{StaticResource Chip}" Content="4xx" GroupName="sf"
+                                     Command="{Binding SetStatusFilterCommand}" CommandParameter="4xx"/>
+                        <RadioButton Style="{StaticResource Chip}" Content="5xx" GroupName="sf"
+                                     Command="{Binding SetStatusFilterCommand}" CommandParameter="5xx"/>
+                        <RadioButton Style="{StaticResource Chip}" Content="Errors" GroupName="sf"
+                                     Command="{Binding SetStatusFilterCommand}" CommandParameter="ERR"/>
+                    </StackPanel>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="3*" MinWidth="460"/>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition Width="2*" MinWidth="330"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Background="{StaticResource Panel}" CornerRadius="10" ClipToBounds="True">
+                            <DataGrid x:Name="RequestGrid" ItemsSource="{Binding RowsView}"
+                                      SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                                      SelectionUnit="FullRow" AlternationCount="2"
+                                      PreviewMouseRightButtonDown="OnGridRightClick">
+                                <DataGrid.ContextMenu>
+                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                        <MenuItem Header="Send to Talon ▶" Command="{Binding SendToTalonCommand}"/>
+                                        <MenuItem Header="Copy as TalonFormat" Command="{Binding CopyTalonFormatCommand}"/>
+                                        <MenuItem Header="Copy as TalonScript" Command="{Binding CopyTalonScriptCommand}"/>
+                                        <Separator/>
+                                        <MenuItem Header="Copy URL" Command="{Binding CopyUrlCommand}"/>
+                                        <MenuItem Header="Copy as cURL" Command="{Binding CopyCurlCommand}"/>
+                                        <MenuItem Header="Copy request headers" Command="{Binding CopyRequestHeadersCommand}"/>
+                                        <MenuItem Header="Copy response body" Command="{Binding CopyResponseBodyCommand}"/>
+                                        <MenuItem Header="Save response body…" Command="{Binding SaveResponseBodyCommand}"/>
+                                    </ContextMenu>
+                                </DataGrid.ContextMenu>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="#" Binding="{Binding Id}" Width="46"/>
+                                    <DataGridTextColumn Header="TIME" Binding="{Binding Time}" Width="90"/>
+                                    <DataGridTextColumn Header="APP" Binding="{Binding AppText}" Width="110"/>
+                                    <DataGridTemplateColumn Header="METHOD" Width="82">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{Binding MethodBrush}" CornerRadius="4" Padding="7,2"
+                                                        HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Method}" Foreground="#0E1013"
+                                                               FontWeight="Bold" FontSize="10.5"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="STATUS" Width="62">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}"
+                                                           FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="HOST" Binding="{Binding Host}" Width="180"/>
+                                    <DataGridTemplateColumn Header="LOCATION" Width="92">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                                            ToolTip="{Binding CountryTooltip}">
+                                                    <Image Source="{Binding FlagImage}" Width="20" Height="14"
+                                                           Margin="0,0,6,0" SnapsToDevicePixels="True"/>
+                                                    <TextBlock Text="{Binding CountryText}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="PATH" Binding="{Binding PathText}" Width="*"/>
+                                    <DataGridTextColumn Header="TYPE" Binding="{Binding TypeText}" Width="86"/>
+                                    <DataGridTextColumn Header="SIZE" Binding="{Binding SizeText}" Width="68"/>
+                                    <DataGridTextColumn Header="TOOK" Binding="{Binding DurationText}" Width="72"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+
+                        <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch"/>
+
+                        <Border Grid.Column="2" Background="{StaticResource Panel}" CornerRadius="10" ClipToBounds="True">
+                            <Grid>
+                                <TextBlock Text="Select a request to inspect its details"
+                                           Foreground="{StaticResource Faint}" HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" FontSize="13">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasSelection}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+
+                                <Grid Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <Border Grid.Row="0" Background="{StaticResource PanelAlt}" Padding="14,11"
+                                            BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1">
+                                        <TextBlock Text="{Binding SelectedRow.Url}" TextTrimming="CharacterEllipsis"
+                                                   FontWeight="SemiBold" FontSize="13"/>
+                                    </Border>
+
+                                    <TabControl Grid.Row="1" Margin="8,8,8,8">
+                                        <TabItem Header="Overview">
+                                            <TextBox Style="{StaticResource Mono}" Text="{Binding OverviewText, Mode=OneWay}"/>
+                                        </TabItem>
+                                        <TabItem Header="Request">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="2*"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="3*"/>
+                                                </Grid.RowDefinitions>
+                                                <DockPanel Grid.Row="0" Margin="10,8,6,4">
+                                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}"
+                                                            Content="Copy" Command="{Binding CopyRequestHeadersCommand}"/>
+                                                    <TextBlock Text="HEADERS" Style="{StaticResource SectionLabel}"/>
+                                                </DockPanel>
+                                                <TextBox Grid.Row="1" Style="{StaticResource Mono}" Text="{Binding RequestHeadersText, Mode=OneWay}"
+                                                         TextWrapping="{Binding WrapBodies, Converter={StaticResource BoolToWrap}}"/>
+                                                <DockPanel Grid.Row="2" Margin="10,8,6,4">
+                                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}"
+                                                            Content="Copy" Command="{Binding CopyRequestBodyCommand}"/>
+                                                    <TextBlock Text="BODY" Style="{StaticResource SectionLabel}"/>
+                                                </DockPanel>
+                                                <TextBox Grid.Row="3" Style="{StaticResource Mono}" Text="{Binding RequestBodyText, Mode=OneWay}"
+                                                         TextWrapping="{Binding WrapBodies, Converter={StaticResource BoolToWrap}}"/>
+                                            </Grid>
+                                        </TabItem>
+                                        <TabItem Header="Response">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="2*"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="3*"/>
+                                                </Grid.RowDefinitions>
+                                                <DockPanel Grid.Row="0" Margin="10,8,6,4">
+                                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}"
+                                                            Content="Copy" Command="{Binding CopyResponseHeadersCommand}"/>
+                                                    <TextBlock Text="HEADERS" Style="{StaticResource SectionLabel}"/>
+                                                </DockPanel>
+                                                <TextBox Grid.Row="1" Style="{StaticResource Mono}" Text="{Binding ResponseHeadersText, Mode=OneWay}"
+                                                         TextWrapping="{Binding WrapBodies, Converter={StaticResource BoolToWrap}}"/>
+                                                <DockPanel Grid.Row="2" Margin="10,8,6,4">
+                                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                                        <Button Style="{StaticResource GhostButton}" Content="Save…" Command="{Binding SaveResponseBodyCommand}"/>
+                                                        <Button Style="{StaticResource GhostButton}" Content="Copy" Command="{Binding CopyResponseBodyCommand}"/>
+                                                    </StackPanel>
+                                                    <TextBlock Text="BODY" Style="{StaticResource SectionLabel}"/>
+                                                </DockPanel>
+                                                <TextBox Grid.Row="3" Style="{StaticResource Mono}" Text="{Binding ResponseBodyText, Mode=OneWay}"
+                                                         TextWrapping="{Binding WrapBodies, Converter={StaticResource BoolToWrap}}"/>
+                                            </Grid>
+                                        </TabItem>
+                                    </TabControl>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- ===================== TALON ===================== -->
+            <TabItem Header="🦅 Talon">
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1*" MinWidth="380"/>
+                        <ColumnDefinition Width="6"/>
+                        <ColumnDefinition Width="1*" MinWidth="330"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Request: a single TalonFormat code editor -->
+                    <Border Grid.Column="0" Background="{StaticResource Panel}" CornerRadius="10" ClipToBounds="True">
+                        <Grid Margin="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,8">
+                                <Button DockPanel.Dock="Left" Style="{StaticResource PrimaryButton}" MinWidth="112" Height="34"
+                                        Content="{Binding Talon.SendButtonText}" Command="{Binding Talon.SendCommand}"/>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Height="34" Margin="7,0,0,0"
+                                        Content="Copy cURL" Command="{Binding Talon.CopyCurlCommand}"/>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Height="34"
+                                        Content="Copy TalonFormat" Command="{Binding Talon.CopyTalonFormatCommand}"/>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Height="34" Margin="0,0,7,0"
+                                        Content="📖 Docs" Click="OnDocsClick"/>
+                            </DockPanel>
+
+                            <Border Grid.Row="1" Background="{StaticResource PanelAlt}" CornerRadius="7" ClipToBounds="True">
+                                <avalon:TextEditor x:Name="TalonEditor"
+                                        ui:AvalonEditHelper.BoundText="{Binding Talon.TalonText, Mode=TwoWay}"
+                                        Background="Transparent" Foreground="{StaticResource Text}"
+                                        FontFamily="Cascadia Mono, Consolas" FontSize="13"
+                                        ShowLineNumbers="True" LineNumbersForeground="{StaticResource Faint}"
+                                        WordWrap="False" Padding="8"
+                                        HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch"/>
+
+                    <!-- Response -->
+                    <Border Grid.Column="2" Background="{StaticResource Panel}" CornerRadius="10" ClipToBounds="True">
+                        <Grid Margin="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Background="{StaticResource PanelAlt}" BorderBrush="{StaticResource Border}"
+                                    BorderThickness="1" CornerRadius="7" Padding="12,9" Margin="0,0,0,8">
+                                <TextBlock Text="{Binding Talon.ResponseStatus, TargetNullValue='Ready'}"
+                                           Foreground="{Binding Talon.ResponseStatusBrush}" FontWeight="SemiBold"
+                                           FontSize="13" TextTrimming="CharacterEllipsis"/>
+                            </Border>
+                            <TabControl Grid.Row="1">
+                                <TabItem Header="Response">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="2*"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="3*"/>
+                                        </Grid.RowDefinitions>
+                                        <DockPanel Grid.Row="0" Margin="2,4,0,4">
+                                            <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}"
+                                                    Content="Copy" Command="{Binding Talon.CopyResponseHeadersCommand}"/>
+                                            <TextBlock Text="HEADERS" Style="{StaticResource SectionLabel}"/>
+                                        </DockPanel>
+                                        <TextBox Grid.Row="1" Style="{StaticResource Mono}" Text="{Binding Talon.ResponseHeaders, Mode=OneWay}"/>
+                                        <DockPanel Grid.Row="2" Margin="2,8,0,4">
+                                            <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}"
+                                                    Content="Copy" Command="{Binding Talon.CopyResponseBodyCommand}"/>
+                                            <TextBlock Text="BODY" Style="{StaticResource SectionLabel}"/>
+                                        </DockPanel>
+                                        <TextBox Grid.Row="3" Style="{StaticResource Mono}" TextWrapping="Wrap" Text="{Binding Talon.ResponseBody, Mode=OneWay}"/>
+                                    </Grid>
+                                </TabItem>
+                                <TabItem Header="Console">
+                                    <TextBox Style="{StaticResource Mono}" TextWrapping="Wrap"
+                                             Text="{Binding Talon.ConsoleOutput, Mode=OneWay}"/>
+                                </TabItem>
+                            </TabControl>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <!-- ============ Status bar ============ -->
+        <Border Grid.Row="2" Background="{StaticResource Panel}" BorderBrush="{StaticResource Border}"
+                BorderThickness="0,1,0,0" Padding="14,7">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Ellipse Grid.Column="0" Width="9" Height="9" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <Ellipse.Style>
+                        <Style TargetType="Ellipse">
+                            <Setter Property="Fill" Value="{StaticResource Faint}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCapturing}" Value="True">
+                                    <Setter Property="Fill" Value="{StaticResource Accent}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Ellipse.Style>
+                </Ellipse>
+                <TextBlock Grid.Column="1" Text="{Binding StatusText}" Foreground="{StaticResource Muted}"
+                           FontSize="12" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="{Binding CountText}" Foreground="{StaticResource Muted}"
+                           FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,4,0"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

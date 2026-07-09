@@ -1,0 +1,96 @@
+<Window x:Class="GullProxy.DocsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TalonScript — reference" Height="780" Width="660"
+        Background="{StaticResource Bg}" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style x:Key="H1" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        <Style x:Key="H2" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,18,0,6"/>
+        </Style>
+        <Style x:Key="P" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        <Style x:Key="Code" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource PanelAlt}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="7"/>
+            <Setter Property="Padding" Value="12,9"/>
+            <Setter Property="Margin" Value="0,4,0,8"/>
+        </Style>
+        <Style x:Key="CodeText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="22,20">
+        <StackPanel MaxWidth="600" HorizontalAlignment="Left">
+            <TextBlock Style="{StaticResource H1}" Text="🦅 TalonScript"/>
+            <TextBlock Style="{StaticResource P}"
+                Text="A small language built into Talon for HTTP automation. Write it in script blocks inside your request:"/>
+            <Border Style="{StaticResource Code}">
+                <TextBlock Style="{StaticResource CodeText}"><Run Text="&lt; {%   … runs BEFORE the request …  %}&#10;&gt; {%   … runs AFTER the response …  %}"/></TextBlock>
+            </Border>
+
+            <TextBlock Style="{StaticResource H2}" Text="Objects you get"/>
+            <TextBlock Style="{StaticResource P}"><Run Text="request"/><Run Foreground="#8A909C" Text=" (pre) — .method .url .headers[&quot;..&quot;] .body  (all writable)"/></TextBlock>
+            <TextBlock Style="{StaticResource P}"><Run Text="response"/><Run Foreground="#8A909C" Text=" (post) — .status .statusText .headers[&quot;..&quot;] .body .json()"/></TextBlock>
+            <TextBlock Style="{StaticResource P}"><Run Text="vars"/><Run Foreground="#8A909C" Text=" — your variables; persist across sends; used by {{name}} in the request."/></TextBlock>
+
+            <TextBlock Style="{StaticResource H2}" Text="Example — capture a token, reuse it"/>
+            <Border Style="{StaticResource Code}">
+                <TextBlock Style="{StaticResource CodeText}"><Run Text="POST {{host}}/login&#10;Content-Type: application/json&#10;&#10;{ &quot;user&quot;: &quot;alice&quot;, &quot;pass&quot;: &quot;hunter2&quot; }&#10;&#10;&gt; {%&#10;  token = response.json().access_token&#10;  log &quot;got&quot;, token&#10;%}"/></TextBlock>
+            </Border>
+            <TextBlock Style="{StaticResource P}" Text="Then use {{token}} in your next request."/>
+
+            <TextBlock Style="{StaticResource H2}" Text="Syntax"/>
+            <Border Style="{StaticResource Code}">
+                <TextBlock Style="{StaticResource CodeText}"><Run Text="x = 2 + 3 * 4              # variables&#10;total += 5                 # compound assignment&#10;nums = [1, 2, 3]           # list literal&#10;obj  = { a: 1, b: 2 }      # object literal&#10;request.headers[&quot;X&quot;] = uuid()&#10;&#10;if response.status == 200 { log &quot;ok&quot; } else { log &quot;bad&quot; }&#10;for n in nums { total += n }&#10;while total &lt; 100 { total = total * 2 }&#10;repeat 3 { log &quot;tick&quot; }     # break / continue supported"/></TextBlock>
+            </Border>
+
+            <TextBlock Style="{StaticResource H2}" Text="Operators"/>
+            <TextBlock Style="{StaticResource P}" Text="+  -  *  /  %      ( + joins strings and lists )      = += -= *= /="/>
+            <TextBlock Style="{StaticResource P}" Text="==  !=  &lt;  &gt;  &lt;=  &gt;=      and   or   not"/>
+
+            <TextBlock Style="{StaticResource H2}" Text="Built-in functions"/>
+            <TextBlock Style="{StaticResource P}" Foreground="#8A909C" Text="math"/>
+            <Border Style="{StaticResource Code}">
+                <TextBlock Style="{StaticResource CodeText}"><Run Text="abs floor ceil round(x,d) trunc sqrt pow(a,b) exp ln log10 sign&#10;sin cos tan atan atan2 min(..) max(..) clamp(x,lo,hi) random() randomInt(a,b)&#10;PI  E  TAU"/></TextBlock>
+            </Border>
+            <TextBlock Style="{StaticResource P}" Foreground="#8A909C" Text="strings &amp; regex"/>
+            <Border Style="{StaticResource Code}">
+                <TextBlock Style="{StaticResource CodeText}"><Run Text="upper lower trim len contains startsWith endsWith indexOf replace&#10;split(s,sep) join(list,sep) substring(s,a,b) repeat(s,n) padStart padEnd&#10;regexTest(s,re) regexMatch(s,re) regexReplace(s,re,to) regexAll(s,re)&#10;urlEncode urlDecode"/></TextBlock>
+            </Border>
+            <TextBlock Style="{StaticResource P}" Foreground="#8A909C" Text="crypto &amp; encoding"/>
+            <Border Style="{StaticResource Code}">
+                <TextBlock Style="{StaticResource CodeText}"><Run Text="md5 sha1 sha256 hmacSha256(msg,key)&#10;base64 base64decode base64url hex"/></TextBlock>
+            </Border>
+            <TextBlock Style="{StaticResource P}" Foreground="#8A909C" Text="collections &amp; util"/>
+            <Border Style="{StaticResource Code}">
+                <TextBlock Style="{StaticResource CodeText}"><Run Text="list(..) range(a,b) push(l,x) first last reverse sort sum slice(l,a,b)&#10;keys values has(o,k) get(o,k,def) merge(a,b) object()&#10;type(x) isNull(x) default(x,y) str num bool json jsonStringify&#10;now() timestamp() timestampMs() uuid() env(name)"/></TextBlock>
+            </Border>
+
+            <TextBlock Style="{StaticResource H2}" Text="Values"/>
+            <TextBlock Style="{StaticResource P}"
+                Text="null · booleans (true/false) · numbers · strings (&quot;..&quot; or '..') · lists [..] · objects {..}. Comments start with # or //."/>
+
+            <TextBlock Style="{StaticResource P}" Margin="0,18,0,0" Foreground="#5A616D"
+                Text="Full reference: docs/TalonScript.md in the project."/>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

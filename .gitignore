@@ -1,0 +1,34 @@
+# ---- Build output ----
+[Bb]in/
+[Oo]bj/
+[Rr]elease/
+[Dd]ebug/
+*.dll
+*.pdb
+
+# ---- Published / copied executables (too big for git — use GitHub Releases) ----
+*.exe
+publish/
+
+# ---- Visual Studio / Rider / VS Code ----
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+*_wpftmp.csproj
+
+# ---- NuGet ----
+*.nupkg
+packages/
+project.lock.json
+project.assets.json
+
+# ---- OS junk ----
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Keep documentation images (they are committed on purpose)
+!docs/images/*.png
