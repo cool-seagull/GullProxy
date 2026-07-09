@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🐦 GullProxy
+# GullProxy
 
 ### See every request your PC makes — decrypted, attributed, and scriptable.
 
@@ -20,34 +20,34 @@ craft requests with a built-in editor and its own scripting language.
 
 ---
 
-## ✨ Features
+## 🪶 Features
 
-- 🔓 **Full HTTPS decryption** — man-in-the-middles TLS with an auto-generated root CA, so you
+-  **Full HTTPS decryption** — man-in-the-middles TLS with an auto-generated root CA, so you
   see decrypted request/response bodies, not opaque tunnels.
-- 🧭 **Which app sent it** — every request is attributed to the local process that made it
+-  **Which app sent it** — every request is attributed to the local process that made it
   (Firefox, Discord, curl…), resolved from the OS TCP table.
-- 🌍 **Server geolocation** — resolves each server's IP and country, shown with a real flag.
-- 🧵 **Streaming & fast** — bodies stream (downloads/SSE work), failures fail fast with a 502
+-  **Server geolocation** — resolves each server's IP and country, shown with a real flag.
+-  **Streaming & fast** — bodies stream (downloads/SSE work), failures fail fast with a 502
   instead of hanging, and it **never leaves your system proxy broken** (restored on exit/crash).
-- ⚡ **HTTP/2 & HTTP/3 to origins** via `HttpClient`; HTTP/1.1 to the browser for rock-solid
+-  **HTTP/2 & HTTP/3 to origins** via `HttpClient`; HTTP/1.1 to the browser for rock-solid
   compatibility.
-- 🔎 **Rich inspection** — colored method/status, status filters, live search, pretty-printed
+-  **Rich inspection** — colored method/status, status filters, live search, pretty-printed
   JSON, TTFB + total timing, content types, encodings, header counts, and TLS/plaintext.
-- 🕸️ **WebSocket-aware** — upgrade connections are relayed and logged.
-- 🦅 **Talon** — a request editor + replayer with a single portable text format
+-  **WebSocket-aware** — upgrade connections are relayed and logged.
+-  **Talon** — a request editor + replayer with a single portable text format
   (**TalonFormat**) and its own embedded scripting language (**TalonScript**), with syntax
   highlighting and in-app docs.
-- 🖥️ **Native desktop UI** (WPF, dark theme). No browser tab, no console.
-- 📦 **Single self-contained `.exe`** — nothing to install (bundles the runtime).
+-  **Native desktop UI** (WPF, dark theme). No browser tab, no console.
+-  **Single self-contained `.exe`** — nothing to install (bundles the runtime).
 
 ---
 
-## 🚀 Quick start
+##  Quick start
 
 1. **Download** `GullProxy.exe` from the [Releases](../../releases) page.
 2. **Run it.** (It's unsigned, so Windows SmartScreen may warn — *More info → Run anyway*.)
 3. On first launch it installs its root CA and turns on the system proxy, then starts capturing.
-   - 🦊 **Using Firefox?** Fully quit and reopen it once — GullProxy configures Firefox to trust
+   -  **Using Firefox?** Fully quit and reopen it once — GullProxy configures Firefox to trust
      the CA, but Firefox only reads that on startup. Chrome/Edge need no extra step.
 4. Browse as usual and watch requests stream in. Press **Stop capturing** (or close the window)
    to instantly restore normal networking.
@@ -60,7 +60,7 @@ craft requests with a built-in editor and its own scripting language.
 
 ---
 
-## 🦅 Talon — replay, craft & script requests
+##  🦅Talon — replay, craft & script requests
 
 Right-click any captured request → **Send to Talon**, then edit and re-send it. Talon is a single
 code editor using **TalonFormat** (method, URL, headers, body, `{{variables}}`), and you can embed
